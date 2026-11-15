@@ -50,6 +50,12 @@ export class Controls {
     const pads=this.getPads();this.padNames=pads.filter(Boolean).map(x=>x.id||'Controller');
     return Object.fromEntries(['p1','p2'].map((id,index)=>{
       const keys=fromKeys(this.keys,id),pad=fromPad(pads[index]);
+      const touch=index===0?this.touch:null;
+      if(touch?.accelerate||touch?.brake){
+        keys.throttle=touch.brake?-1:1;keys.accelerate=touch.accelerate;keys.brake=touch.brake;
+      }
+      if(touch?.steer)keys.steer=touch.steer;
+      keys.boost||=!!touch?.boost;keys.drift||=!!touch?.drift;keys.descend||=!!touch?.descend;
       const resetKey=id==='p1'?'KeyR':'Enter';
       if(!pad.drift)this.driftGate[id]=false;
       if(!pad.boost)this.boostGate[id]=false;

@@ -14,7 +14,7 @@
 <div id="menu" class="backdrop"><section class="menu-card" aria-label="Race menu">
  <div class="eyebrow">LAB5 / BUMPER LAB · LOCAL RACING</div>
  <div class="menu-stage" data-stage="home"><h1>SPLAT RACERS</h1><p>Pick how many people are playing.</p>
-  <div class="menu-choice"><button id="solo-btn" type="button" class="primary"><span>01</span><strong>ONE PLAYER</strong><small>Race solo or with up to 3 computer opponents</small></button><button id="local-btn" type="button" class="primary coral"><span>02</span><strong>TWO PLAYERS</strong><small>Split-screen with up to 2 computer opponents</small></button></div>
+  <p class="touch-help">Steer with your left thumb. In flight, slide up to climb or down to descend. Hold Gas and slide to Turbo for a boost.</p><div class="menu-choice"><button id="solo-btn" type="button" class="primary"><span>01</span><strong>ONE PLAYER</strong><small>Race solo or with up to 3 computer opponents</small></button><button id="local-btn" type="button" class="primary coral"><span>02</span><strong>TWO PLAYERS</strong><small>Split-screen with up to 2 computer opponents</small></button></div>
   <button id="open-settings-btn" class="secondary" type="button">SETTINGS &amp; CONTROLS</button></div>
  <div class="menu-stage" data-stage="setup" hidden><h1>RACE SETUP</h1><p>Choose your course rules. Maximum four racers on the grid.</p>
   <label class="difficulty-picker" for="npc-count">Computer racers <select id="npc-count" aria-label="Computer racers"><option value="0">None</option><option value="1" selected>1 NPC</option><option value="2">2 NPCs</option><option value="3">3 NPCs</option></select></label>
@@ -29,7 +29,7 @@
   <div id="vehicle-selection-note" class="help-note">Computer racers can include karts, hovercrafts and drones.</div>
   <div class="step-actions"><button id="vehicles-back-btn" class="secondary" type="button">BACK</button><button id="start-race-btn" class="primary step-primary" type="button">START RACE</button></div></div>
  <div class="menu-stage" data-stage="pause" hidden><h1>PAUSED</h1><p>Ready to get back on the track?</p>
-  <button id="resume-btn" class="primary step-primary" type="button">RESUME RACE</button><button id="pause-settings-btn" class="secondary" type="button">SETTINGS &amp; CONTROLS</button><button id="pause-new-race-btn" class="secondary" type="button">NEW RACE / CHANGE MODE</button></div>
+  <button id="resume-btn" class="primary step-primary" type="button">RESUME RACE</button><button id="touch-recover" class="secondary" type="button">Recover vehicle</button><button id="pause-settings-btn" class="secondary" type="button">SETTINGS &amp; CONTROLS</button><button id="pause-new-race-btn" class="secondary" type="button">NEW RACE / CHANGE MODE</button></div>
  <div class="menu-stage" data-stage="settings" hidden><h1>SETTINGS &amp; CONTROLS</h1><p>Player 1 and Player 2 share the same controller layout. Choose your controller from the detected devices.</p>
   <div class="settings-scroll"><div class="control-heading">KEYBOARD</div><div class="control-table" role="table" aria-label="Keyboard bindings">
    <div class="control-row control-head" role="row"><b>ACTION</b><b>PLAYER 1</b><b>PLAYER 2</b></div>

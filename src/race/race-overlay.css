@@ -1,3 +1,38 @@
 .race-map{position:fixed;right:12px;top:22%;width:clamp(100px,16vw,165px);height:auto;background:#10252cda;border:1px solid #bacfc780;border-radius:12px;pointer-events:none}
 .race-touch{display:none}
 @media(pointer:coarse){.race-touch{position:fixed;bottom:max(8px,env(safe-area-inset-bottom));left:2%;right:2%;display:flex;flex-wrap:wrap;justify-content:space-between;gap:3px;pointer-events:auto;z-index:12}.race-touch button{min-width:44px;min-height:44px;touch-action:none;user-select:none;color:white;background:#163c48ed;border:1px solid #9ebcb9;border-radius:8px}.race-touch button:active{background:#447267}.gamepad-hint,.sog-readiness{display:none}}
+.touch-help{display:none}
+@media(any-pointer:coarse){
+ .race-touch{position:fixed;inset:auto max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));display:flex;align-items:end;justify-content:space-between;pointer-events:none;z-index:12;user-select:none;-webkit-user-select:none}
+ .thumb-stick,.pedals{touch-action:none;pointer-events:auto}
+ .thumb-stick{width:clamp(92px,26dvh,130px);aspect-ratio:1;position:relative;display:grid;place-items:center;border-radius:50%;background:#102b35ac;border:2px solid #dbf4f499;color:white}
+ .stick-tip{width:43%;aspect-ratio:1;border:2px solid #e7fcff;border-radius:50%;background:#81bfc4cf;pointer-events:none}
+ .thumb-stick b{position:absolute;bottom:4px;font:700 9px system-ui;letter-spacing:.06em;pointer-events:none}
+ .pedals{display:grid;grid-template-columns:56px 66px;gap:5px;align-items:end}
+ .race-touch .pedals button{padding:0;border:1px solid #c6e7e7;border-radius:16px;min-height:46px;font:750 14px system-ui;color:white;background:#193f4ee6}
+ .pedals button[data-action=gas]{grid-column:2;grid-row:2;background:#b7e780;color:#172e23;height:60px}
+ .pedals button[data-action=boost]{grid-column:2;grid-row:1;background:#ffcc70;color:#3b280c}
+ .pedals button[data-action=brake]{grid-column:1;grid-row:2}
+ .pedals button.pressed{outline:3px solid white;filter:brightness(1.2)}
+ body .brand,.game-hud .mode-label,.game-hud .gamepad-hint,#sog-readiness,#debug-btn,.game-hud .top-buttons span{display:none}
+ #game-hud .speed-panel{position:fixed;top:max(6px,env(safe-area-inset-top))!important;bottom:auto;left:max(8px,env(safe-area-inset-left))!important;width:auto;max-width:36vw;display:grid;grid-template-columns:auto auto;gap:2px 8px;padding:5px 9px;font-size:11px}
+ #game-hud .speed-panel[hidden]{display:none}
+ #game-hud .speed-panel .speed{font-size:14px;margin:0}
+ #game-hud .speed-panel .boost{padding:0;margin:0;font-size:9px;background:none}
+ .speed-panel .label,.speed-panel .checkpoint-guide{display:none}
+ #game-hud .top-buttons{top:max(6px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right))}
+ #game-hud .top-buttons button{min-height:44px}
+ .race-map{width:76px;top:57px;right:max(8px,env(safe-area-inset-right))}
+ #lan-hud{bottom:auto;top:6px;min-width:0;padding:6px}
+ .touch-help{display:block;color:#c3dedb;font-size:13px;line-height:1.4}
+ #menu .menu-card{max-height:calc(100dvh - 16px);padding:14px 18px;overflow:auto}
+ #menu .menu-card button,#menu .menu-card select{min-height:44px}
+}
+#touch-recover{display:none}
+@media(any-pointer:coarse){
+ #touch-recover{display:inline-block}
+ body:not(.racing) #game-hud .race-touch{display:none}
+ #game-hud .speed-panel .checkpoint-guide{display:block;grid-column:1/-1;margin:0;padding:0;border:0}
+ #game-hud .guide-head,#game-hud .guide-progress,#game-hud .guide-rival,#game-hud .guide-track{display:none}
+ #game-hud .guide-vector{font-size:11px;margin:0}
+}

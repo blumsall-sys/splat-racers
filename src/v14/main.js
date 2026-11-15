@@ -487,7 +487,7 @@ async function initialize(){
   if(sogStatus.state==='missing')console.warn('[LAB5 SOG] No SOG configured in active pack',pack.packId);
   else if(sogStatus.state==='loaded')console.info('[LAB5 SOG] asset ready', {url:pack.splat.sog, version:pack.splat.sogSha256, resource:!!geometry.sogAsset?.resource});
   addFinishLineFallback(app,track,app.systems.rigidbody);
-  controls=new Controls();attachTouch(controls,$('game-hud'));showEffects(app,pc,track);
+  controls=new Controls();attachTouch(controls,$('game-hud'),()=>['HOVER','DRONE'].includes(world?.cars.find(c=>c.id==='p1')?.spec.type));showEffects(app,pc,track);
   for(const event of ['gamepadconnected','gamepaddisconnected'])window.addEventListener(event,()=>{if(menuStage==='settings')stage('settings');});
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){e.preventDefault();controls.keys.delete('Escape');backMenu();}});
   // The kart update is paused while the menu is displayed; this navigator
@@ -526,6 +526,7 @@ async function initialize(){
   $('open-settings-btn').addEventListener('click',()=>{settingsReturn='home';stage('settings');});
   $('pause-settings-btn').addEventListener('click',()=>{settingsReturn='pause';stage('settings');});
   $('settings-back-btn').addEventListener('click',()=>stage(settingsReturn));
+  $('touch-recover').onclick=()=>{const car=world?.cars.find(c=>c.id==='p1');if(car){recoverCar(car,{},'manual');pause(false);}};
   $('resume-btn').addEventListener('click',()=>pause(false));
   $('pause-btn').addEventListener('click',()=>pause(true));
   $('restart-btn').addEventListener('click',()=>start(mode||'solo'));

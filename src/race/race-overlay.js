@@ -1,15 +1,43 @@
 import './race-overlay.css';
-export function attachTouch(controls,hud){
+export function attachTouch(controls,hud,isFlying){
  const pad=document.createElement('div');
  pad.className='race-touch';
- for(const [name,key] of [['Left','KeyA'],['Right','KeyD'],['Brake','KeyS'],['Go','KeyW'],['Up','ShiftLeft'],['Down','KeyQ'],['Boost','Space'],['Reset','KeyR']]){
-  const button=document.createElement('button');
-  button.textContent=name;
-  button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);controls.keys.add(key);};
-  button.onlostpointercapture=()=>controls.keys.delete(key);
-  pad.append(button);
- }
+ pad.innerHTML='<div class="thumb-stick" aria-label="Steering joystick"><span class="stick-tip"></span><b>STEER</b></div><div class="pedals"><button data-action="boost">Turbo</button><button data-action="gas">Gas</button><button data-action="brake">Brake</button></div>';
  hud.append(pad);
+ const stick=pad.querySelector('.thumb-stick'),tip=pad.querySelector('.stick-tip');
+ let stickId=null;
+ const fingers=new Map();
+ const state=controls.touch={};
+ function center(){
+  stickId=null;state.steer=0;state.drift=false;state.descend=false;
+  tip.style.transform='';
+ }
+ function pedals(){
+  const actions=new Set(fingers.values());
+  state.boost=actions.has('boost');state.brake=actions.has('brake');
+  state.accelerate=!state.brake&&(actions.has('gas')||state.boost);
+  for(const b of pad.querySelectorAll('button'))b.classList.toggle('pressed',actions.has(b.dataset.action));
+ }
+ function clear(){center();fingers.clear();pedals();}
+ function move(e){
+  const box=stick.getBoundingClientRect(),r=box.width/2;
+  const dx=(e.clientX-box.left-r)/r,dy=(e.clientY-box.top-r)/r;
+  const scale=Math.max(1,Math.hypot(dx,dy));
+  state.steer=Math.abs(dx)<.10?0:Math.sign(dx)*Math.min(1,(Math.abs(dx)-.10)/.65);
+  state.drift=dy<(isFlying()?-.36:-.8);state.descend=isFlying()&&dy>.36;
+  tip.style.transform='translate('+dx/scale*r*.62+'px,'+dy/scale*r*.62+'px)';
+ }
+ stick.onpointerdown=e=>{if(stickId!==null)return;e.preventDefault();stickId=e.pointerId;stick.setPointerCapture(stickId);move(e);};
+ stick.onpointermove=e=>{if(e.pointerId===stickId)move(e);};
+ stick.onlostpointercapture=e=>{if(e.pointerId===stickId)center();};
+ const cluster=pad.querySelector('.pedals');
+ const actionAt=e=>document.elementFromPoint(e.clientX,e.clientY)?.closest('.pedals button')?.dataset.action;
+ cluster.onpointerdown=e=>{if(!actionAt(e))return;e.preventDefault();cluster.setPointerCapture(e.pointerId);fingers.set(e.pointerId,actionAt(e));pedals();};
+ cluster.onpointermove=e=>{if(fingers.has(e.pointerId)){fingers.set(e.pointerId,actionAt(e));pedals();}};
+ cluster.onlostpointercapture=e=>{fingers.delete(e.pointerId);pedals();};
+ window.addEventListener('blur',clear);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});
+ new MutationObserver(()=>{clear();stick.querySelector('b').textContent=isFlying()?'STEER / ALT':'STEER';}).observe(hud,{attributes:true,attributeFilter:['hidden']});
 }
 export function drawMap(hud,track,racers){
  const points=track.race.waypoints;

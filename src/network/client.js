@@ -23,7 +23,7 @@ function box(parent,name,scale,offset,mat){const e=new pc.Entity(name);e.addComp
 async function loadScene(){
  try{
   [pack,track]=await Promise.all([fetch('./assets/asset-pack.json').then(r=>r.json()),fetch('./assets/track.json').then(r=>r.json())]);
-  vehicleSpecs=vehicleCatalog(pack);attachTouch(keys,$('lan-hud'));showEffects(app,pc,track);
+  vehicleSpecs=vehicleCatalog(pack);attachTouch(keys,$('lan-hud'),()=>['HOVER','DRONE'].includes(snapshots.get(playerId)?.vehicle));showEffects(app,pc,track);
   if(pack.visualGlb){
    const asset=await loadContainer(app,'./assets/'+pack.visualGlb);
    const render=asset.resource.instantiateRenderEntity({castShadows:true});app.root.addChild(render);
