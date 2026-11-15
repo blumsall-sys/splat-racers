@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "packId": "my-race-track-20261110-172750-412633",
+  "coordinateSystem": "Y-up +Z-forward",
+  "unit": "metre",
+  "sceneOrigin": "Blender world origin",
+  "visualGlb": "packs/my-race-track-20261110-172750-412633/visuals.glb",
+  "staticCollisionGlb": "packs/my-race-track-20261110-172750-412633/collision.glb",
+  "dynamic": [
+    {
+      "id": "DYN_crate",
+      "asset": "packs/my-race-track-20261110-172750-412633/dynamic_000.glb",
+      "physics": {
+        "shape": "BOX",
+        "friction": 0.5,
+        "restitution": 0.0
+      }
+    }
+  ],
+  "colliders": [],
+  "vehicles": [],
+  "lights": [],
+  "rendering": {
+    "exposure": 1.0,
+    "fogDistance": 0.0
+  },
+  "materialOverrides": {},
+  "splat": {
+    "sog": "packs/my-race-track-20261110-172750-412633/track.sog",
+    "voxel": "packs/my-race-track-20261110-172750-412633/track.voxel.json",
+    "voxelBinary": "packs/my-race-track-20261110-172750-412633/track.voxel.bin",
+    "voxelCollisionGlb": "packs/my-race-track-20261110-172750-412633/track.splat-collision.glb",
+    "sogSha256": "af2bb465211069bfca0bc2f5b9c61ab74633115e5285c9887c646b9a15ff1c4d",
+    "sogBytes": 22120461,
+    "sogGaussians": 1906696,
+    "sogFormatVersion": 2,
+    "sourceSogName": "Nostalgic Room with Goldfish.sog",
+    "anchorMatrixColumnMajor": [
+      49.9576721,
+      -1.8756055,
+      -0.8444983,
+      0.0,
+      0.8450931,
+      -2.2e-06,
+      49.9928551,
+      0.0,
+      -1.8753376,
+      -49.9648094,
+      0.031699,
+      0.0,
+      0.0,
+      -1.36,
+      0.19,
+      1.0
+    ],
+    "anchorObject": "SOG_PLACEMENT",
+    "transformMethod": "Single unbaked SOG placement matrix: browser=C * BlenderEmpty.matrix_world * inverse(C), C=(x,z,-y); raw PLY remains unchanged",
+    "objectScaleBlender": [
+      50.0,
+      50.0,
+      49.9999962
+    ],
+    "placementExplicit": true
+  },
+  "notes": {
+    "staticMeshPhysics": "v1.4+ uses staticCollisionGlb with Ammo. Legacy v1.3 uses track.json proxies",
+    "sogRendering": "v1.4+ displays SOG. Unbaked SOG_PLACEMENT Empty is captured in the pack; use source-aligned only for PLY with transforms baked by KIRI."
+  }
+}

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#112630"><meta name="description" content="Splat Racers · Blender-authored Gaussian-splat multiplayer racing">
+<title>LAB5 / Splat Racers</title><link rel="stylesheet" href="src/site.css"></head>
+<body><canvas id="viewport" aria-label="PlayCanvas race scene"></canvas>
+<div class="brand"><span class="brand-logo">✦</span><span><strong>SPLAT RACERS</strong><small>LAB5 · PLAYCANVAS / AMMO / SOG V2.3.0</small></span></div>
+<div id="game-hud" class="game-hud" hidden>
+ <section class="speed-panel p1" aria-label="Player one HUD"><div class="hud-top"><span class="label">P1 · DRIVER</span><span class="hud-place" id="p1-place">1ST</span></div><div class="speed" id="p1-speed">0 km/h</div><div class="lap" id="p1-laps">Lap 0 / 3</div><div class="boost" id="p1-boost">NITRO READY</div><div class="checkpoint-guide"><div class="guide-head"><span>NEXT CHECKPOINT</span><b id="p1-target">GATE 1</b></div><div class="guide-vector" id="p1-direction">↑ -- m</div><div class="guide-track"><span id="p1-progress-bar"></span></div><div class="guide-progress" id="p1-progress">Lap 1 / 3</div><div class="guide-rival" id="p1-rival"></div><div class="guide-notice" id="p1-notice" hidden></div></section>
+ <section id="p2-panel" class="speed-panel p2" aria-label="Player two HUD" hidden><div class="hud-top"><span class="label">P2 · DRIVER</span><span class="hud-place" id="p2-place">2ND</span></div><div class="speed" id="p2-speed">0 km/h</div><div class="lap" id="p2-laps">Lap 0 / 3</div><div class="boost" id="p2-boost">NITRO READY</div><div class="checkpoint-guide"><div class="guide-head"><span>NEXT CHECKPOINT</span><b id="p2-target">GATE 1</b></div><div class="guide-vector" id="p2-direction">↑ -- m</div><div class="guide-track"><span id="p2-progress-bar"></span></div><div class="guide-progress" id="p2-progress">Lap 1 / 3</div><div class="guide-rival" id="p2-rival"></div><div class="guide-notice" id="p2-notice" hidden></div></section>
+ <div class="top-buttons"><button id="pause-btn" type="button">PAUSE <span>ESC / START</span></button><button id="restart-btn" type="button">RESTART</button><button id="debug-btn" type="button">DEBUG</button></div>
+ <div id="mode-label" class="mode-label"></div><div id="gamepad-hint" class="gamepad-hint">Keyboard / controller ready</div>
+</div>
+<div id="countdown" class="countdown-overlay" aria-live="assertive" hidden><div class="countdown-kicker">GET READY</div><div id="countdown-number" class="countdown-number">3</div><div class="countdown-footer">RACE START</div></div>
+<div id="menu" class="backdrop"><section class="menu-card" aria-label="Race menu">
+ <div class="eyebrow">LAB5 / BUMPER LAB · LOCAL RACING</div>
+ <div class="menu-stage" data-stage="home"><h1>SPLAT RACERS</h1><p>Pick how many people are playing.</p>
+  <div class="menu-choice"><button id="solo-btn" type="button" class="primary"><span>01</span><strong>ONE PLAYER</strong><small>Race solo or with up to 3 computer opponents</small></button><button id="local-btn" type="button" class="primary coral"><span>02</span><strong>TWO PLAYERS</strong><small>Split-screen with up to 2 computer opponents</small></button></div>
+  <button id="open-settings-btn" class="secondary" type="button">SETTINGS &amp; CONTROLS</button></div>
+ <div class="menu-stage" data-stage="setup" hidden><h1>RACE SETUP</h1><p>Choose your course rules. Maximum four racers on the grid.</p>
+  <label class="difficulty-picker" for="npc-count">Computer racers <select id="npc-count" aria-label="Computer racers"><option value="0">None</option><option value="1" selected>1 NPC</option><option value="2">2 NPCs</option><option value="3">3 NPCs</option></select></label>
+  <label class="difficulty-picker" for="ai-difficulty">Opponent difficulty <select id="ai-difficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>
+  <label class="difficulty-picker" for="race-laps">Race length <select id="race-laps"><option value="1">1 lap</option><option value="3" selected>3 laps</option><option value="5">5 laps</option></select></label>
+  <label class="difficulty-picker" for="race-speed">Track scale / race speed <select id="race-speed"><option value="0.75">0.75× · Casual</option><option value="1" selected>1× · Standard</option><option value="1.25">1.25× · Quick</option><option value="1.5">1.5× · Fast</option><option value="2">2× · Large track</option><option value="2.5">2.5× · Huge track</option></select></label>
+  <div class="step-actions"><button id="setup-back-btn" class="secondary" type="button">BACK</button><button id="setup-next-btn" class="primary step-primary" type="button">CHOOSE VEHICLES</button></div>
+  <button id="explore-btn" class="text-action" type="button">Free Drive / Explore (no laps)</button></div>
+ <div class="menu-stage" data-stage="vehicles" hidden><h1>YOUR VEHICLES</h1><p>Select your vehicles, then head to the starting grid.</p>
+  <div class="vehicle-pickers"><label class="difficulty-picker" for="p1-vehicle">PLAYER 1 <select id="p1-vehicle" aria-label="Player 1 vehicle"><option value="kart">Classic Kart</option></select></label>
+   <label class="difficulty-picker" id="p2-vehicle-field" for="p2-vehicle">PLAYER 2 <select id="p2-vehicle" aria-label="Player 2 vehicle"><option value="kart">Classic Kart</option></select></label></div>
+  <div id="vehicle-selection-note" class="help-note">Computer racers can include karts, hovercrafts and drones.</div>
+  <div class="step-actions"><button id="vehicles-back-btn" class="secondary" type="button">BACK</button><button id="start-race-btn" class="primary step-primary" type="button">START RACE</button></div></div>
+ <div class="menu-stage" data-stage="pause" hidden><h1>PAUSED</h1><p>Ready to get back on the track?</p>
+  <button id="resume-btn" class="primary step-primary" type="button">RESUME RACE</button><button id="pause-settings-btn" class="secondary" type="button">SETTINGS &amp; CONTROLS</button><button id="pause-new-race-btn" class="secondary" type="button">NEW RACE / CHANGE MODE</button></div>
+ <div class="menu-stage" data-stage="settings" hidden><h1>SETTINGS &amp; CONTROLS</h1><p>Player 1 and Player 2 share the same controller layout. Choose your controller from the detected devices.</p>
+  <div class="settings-scroll"><div class="control-heading">KEYBOARD</div><div class="control-table" role="table" aria-label="Keyboard bindings">
+   <div class="control-row control-head" role="row"><b>ACTION</b><b>PLAYER 1</b><b>PLAYER 2</b></div>
+   <div class="control-row"><span>Accelerate / Reverse</span><span>W / S</span><span>↑ / ↓</span></div><div class="control-row"><span>Steer</span><span>A / D</span><span>← / →</span></div>
+   <div class="control-row"><span>Kart hop / Air ascend</span><span>Left Shift</span><span>Right Shift</span></div><div class="control-row"><span>Hover/Drone descend</span><span>Q</span><span>O</span></div><div class="control-row"><span>Nitro / speed boost</span><span>Space</span><span>M / Num 0</span></div><div class="control-row"><span>Respawn</span><span>R</span><span>Enter</span></div><div class="control-row"><span>Pause</span><span colspan="2">Esc</span><span>Esc</span></div></div>
+   <div class="control-heading">GAMEPAD (STANDARD XBOX LAYOUT)</div><div class="control-table" role="table" aria-label="Controller mappings"><div class="control-row control-head"><b>ACTION</b><b>PAD 1 → P1</b><b>PAD 2 → P2</b></div>
+    <div class="control-row"><span>Accelerate / brake</span><span>RT / LT</span><span>RT / LT</span></div><div class="control-row"><span>Steer</span><span>Left stick / D-pad</span><span>Left stick / D-pad</span></div><div class="control-row"><span>Kart hop / Air ascend</span><span>A or X</span><span>A or X</span></div><div class="control-row"><span>Hover/Drone descend</span><span>LB</span><span>LB</span></div><div class="control-row"><span>Nitro / speed boost</span><span>B</span><span>B</span></div><div class="control-row"><span>Respawn</span><span>Y</span><span>Y</span></div><div class="control-row"><span>Pause / confirm / back</span><span>Start / A / B</span><span>Start / A / B</span></div></div>
+   <div id="controller-status" class="help-note">Controller detection: checking…</div>
+   <p>Camera: right stick on either controller. P1 keyboard: J/L orbit, I/K height. P2: numpad 4/6 and 8/2. Flight thrust follows your camera heading.</p><div class="control-heading">GRAPHICS · CHROME</div>
+   <label class="difficulty-picker" for="graphics-quality">Rendering quality <select id="graphics-quality"><option value="performance">Performance (shared/split-screen)</option><option value="balanced" selected>Balanced</option><option value="quality">High (desktop GPU)</option></select></label>
+   <div id="graphics-current" class="help-note">WebGL · balanced shadows</div>
+   <div class="help-note">PlayCanvas renders the scene (not Three.js). Current release targets WebGL 2. Optional Blender-exported prefiltered environment atlas improves GLB vehicle/road materials. A future WebGPU backend requires a separate AppBase boot path.</div>
+   <div class="control-heading">DRIVING ASSIST</div>
+   <label class="difficulty-picker">Vehicle gravity <output id="gravity-scale-value">1.00×</output><input id="gravity-scale" type="range" min="0.35" max="2.50" step="0.05" value="1"></label>
+   <label class="difficulty-picker">Kart hop / hover thrust speed <output id="hop-speed-value">5.50 m/s</output><input id="hop-speed" type="range" min="2" max="10" step="0.1" value="5.5"></label>
+   <div class="help-note">Blender GLB textures, UVs and authored lights are retained. For special glass materials, give the Blender material a LAB5_GLASS name or set the LAB5 PlayCanvas glass override in the material custom properties.</div></div>
+  <button id="settings-back-btn" class="secondary" type="button">BACK</button></div>
+</section></div>
+<div id="win-screen" class="backdrop" hidden><section class="menu-card finish-card" aria-label="Race finished"><div class="finish-stars" aria-hidden="true">✦ ✦ ✦</div><div class="eyebrow">CHECKERED FLAG · RACE COMPLETE</div><h1 id="winner-name">PLAYER 1 WINS!</h1><p id="winner-stats">Finished in 00:00</p><div id="finish-standings" class="finish-standings" aria-label="Race standings"></div><div class="finish-actions"><button id="play-again-btn" class="primary step-primary" type="button">RACE AGAIN</button><button id="win-menu-btn" class="secondary" type="button">MAIN MENU</button></div></section></div>
+<section id="sog-align-panel" class="sog-align-panel" hidden aria-label="SOG visual alignment (does not move collision)">
+ <div class="sog-align-title"><strong>GAUSSIAN SPLAT ALIGNMENT</strong><button id="close-align" type="button">CLOSE</button></div>
+ <p>Offsets are relative to the Blender-exported anchor. They move only the visual SOG, not the collision track.</p>
+ <div class="sog-align-grid">
+ <label>X offset (m)<input id="sog-x" type="number" step="0.1" value="0"></label>
+ <label>Y offset (m)<input id="sog-y" type="number" step="0.1" value="0"></label>
+ <label>Z offset (m)<input id="sog-z" type="number" step="0.1" value="0"></label>
+ <label>Pitch X (°)<input id="sog-rx" type="number" step="1" value="0"></label>
+ <label>Yaw Y (°)<input id="sog-ry" type="number" step="1" value="0"></label>
+ <label>Roll Z (°)<input id="sog-rz" type="number" step="1" value="0"></label>
+ <label>Uniform scale<input id="sog-scale" type="number" step="0.05" min="0.00001" value="1"></label>
+ </div><button type="button" id="save-align">COPY ALIGNMENT JSON</button> <button type="button" id="reset-align">RESET FINE ALIGNMENT</button>
+ <p>Preview adjustments last for this session. To publish an adjustment for all devices, copy the JSON to assets/splat-alignment.json.</p>
+</section>
+<button id="align-btn" class="sog-align-toggle" type="button" hidden>ALIGN SOG</button>
+<div id="sog-readiness" class="sog-readiness" role="status" aria-live="polite">SOG: checking manifest…</div>
+<div id="error-box" class="error-box" role="alert" hidden></div><button id="error-restart" hidden>Restart</button>
+<div id="status" class="status" role="status">Choose one or two players to begin.</div><pre id="debug-data" class="debug-data" hidden></pre>
+<script type="module" src="src/v14/main.js"></script></body></html>

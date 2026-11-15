@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Checkered Flag Gamepad DOM Smoke Test</title></head><body>
+<section id="finish"><button id="play">Play Again</button><button id="mode">Change Mode</button></section>
+<section id="start" hidden><button id="solo">One Player</button></section>
+<pre id="result">TEST NOT STARTED</pre>
+<script type="module">
+import {GamepadMenuNavigator} from '../../src/input/menu-gamepad.js';
+const $=id=>document.getElementById(id),clicks={play:0,mode:0,solo:0};
+const finish=$('finish'),start=$('start');let root=finish,frame,pad;
+const setupPad=(buttons=[])=>({connected:true,mapping:'standard',axes:[0,0],buttons:Array.from({length:17},(_,i)=>({pressed:buttons.includes(i),value:0}))});
+pad=setupPad();
+$('play').onclick=()=>{clicks.play++;root=null;finish.hidden=true;};
+$('mode').onclick=()=>{clicks.mode++;root=start;finish.hidden=true;start.hidden=false;};
+$('solo').onclick=()=>{clicks.solo++;root=null;start.hidden=true;};
+const nav=new GamepadMenuNavigator({getRoot:()=>root,getPads:()=>[pad],raf:fn=>{frame=fn;}});
+function press(buttons=[]){pad=setupPad(buttons);frame();}
+function assert(v,msg){if(!v)throw new Error(msg);}
+try{
+ press();press([13]);press();press([13]); // move from Play Again to Change Mode
+ assert(document.activeElement===$('mode'),'Change Mode did not receive focus');
+ press();press([9]);
+ assert(clicks.mode===1,'Start did not activate Change Mode');
+ press([9]);assert(clicks.solo===0,'held Start triggered twice');
+ press();press([0]);assert(clicks.solo===1,'A did not activate next menu');
+ finish.hidden=false;root=finish;press();press([0]);
+ assert(clicks.play===1,'A did not activate Play Again');
+ $('result').textContent='BROWSER PASS: Start activated Change Mode; A activated Play Again; no double-click or cross-menu confirmation';
+ $('result').dataset.pass='true';
+}catch(e){$('result').textContent='BROWSER FAIL: '+e.message;$('result').dataset.pass='false';}
+nav.destroy();
+</script></body></html>

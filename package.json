@@ -1,0 +1,38 @@
+{
+  "name": "lab5-splat-racers",
+  "version": "2.3.0",
+  "private": true,
+  "type": "module",
+  "description": "High-confidence flight NPC guidance, physical altitude control, 3D route driveability checks, adaptive racing pace and experimental LAN prototype.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "drive:lab": "node scripts/serve-driving-lab.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "setup:ammo": "node scripts/setup-ammo.mjs",
+    "validate": "node scripts/validate.mjs && node scripts/check-assets-v14.mjs",
+    "assets:check": "node scripts/check-assets-v14.mjs",
+    "assets:sog": "node scripts/check-sog-pack.mjs",
+    "assets:sog:require": "node scripts/check-sog-pack.mjs --require",
+    "build": "vite build && node scripts/build-assets.mjs",
+    "import:v13": "node scripts/import-v13-assets.mjs",
+    "import:previous": "node scripts/import-existing-pack.mjs",
+    "dev:diagnostic": "node scripts/dev-with-log.mjs",
+    "collisions:check": "node scripts/check-collisions.mjs",
+    "road:check": "node scripts/check-road-quality.mjs",
+    "qa:native": "node scripts/qa-native-vehicle.mjs",
+    "lan": "node scripts/lan-server.mjs",
+    "bench:npc": "node scripts/benchmark-npc.mjs",
+    "bench:air": "node scripts/benchmark-air-npc.mjs",
+    "bench:flight-force": "node scripts/benchmark-flight-force.mjs",
+    "flight:check": "node scripts/check-flight-course.mjs"
+  },
+  "dependencies": {
+    "playcanvas": "2.23.1"
+  },
+  "devDependencies": {
+    "vite": "7.1.11"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

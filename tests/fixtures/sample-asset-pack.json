@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "packId": "sample-glb",
+  "coordinateSystem": "Y-up +Z-forward",
+  "unit": "metre",
+  "visualGlb": "packs/sample-glb/visuals.glb",
+  "staticCollisionGlb": "packs/sample-glb/collision.glb",
+  "dynamic": [
+    {
+      "id": "crate",
+      "asset": "packs/sample-glb/crate.glb",
+      "physics": {
+        "shape": "BOX",
+        "friction": 0.34,
+        "restitution": 0.42
+      }
+    }
+  ],
+  "splat": {},
+  "notes": {
+    "staticMeshPhysics": "v1.4.2 uses static collision.glb through PlayCanvas/Ammo. This sample does not contain SOG; import an exported Blender asset pack to show your own Gaussian splat."
+  }
+}

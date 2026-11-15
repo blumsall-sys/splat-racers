@@ -1,0 +1,6 @@
+{
+  "position": [0, 0, 0],
+  "rotationEuler": [0, 0, 0],
+  "scale": 1,
+  "note": "Offsets relative to exported anchor. Visual SOG only, no physics shift. Set in Chrome ALIGN SOG panel."
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+
+# Large/private scan sources and Blender edits (keep outside Pages)
+input-assets/
+*.blend
+*.blend1
+*.ply
+
+public/ammo/
+assets-previous-*/

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Splat Racers · LAN Test</title><link rel="stylesheet" href="/src/lan.css"></head>
+<body>
+<canvas id="lan-viewport" aria-label="PlayCanvas LAN race viewport"></canvas>
+<header class="topbar"><strong>✦ SPLAT RACERS</strong><span>LAN TEST · v2.0.0</span><span id="lan-connection">NOT CONNECTED</span></header>
+<div id="lan-lobby" class="lan-panel">
+ <h1>NETWORK RACING</h1><p>Join one local server. The first player is the host. Up to four human racers; empty slots can be NPCs.</p>
+ <label>Racer name <input id="lan-name" maxlength="24" value="Racer" autocomplete="off"></label>
+ <button id="lan-join" class="primary">JOIN ROOM</button>
+ <div id="lan-after-join" hidden>
+  <p><b id="lan-player-id"></b></p>
+  <label>Vehicle <select id="lan-vehicle"><option value="KART">Kart</option><option value="HOVER">Hovercraft</option><option value="DRONE">Drone</option></select></label>
+  <button id="lan-ready">READY</button>
+  <div id="lan-host-settings" hidden><h3>HOST RACE SETTINGS</h3>
+   <label>NPCs <select id="lan-npcs"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+   <label>Laps <select id="lan-laps"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option></select></label>
+   <label>Speed <select id="lan-pace"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option></select></label>
+   <label>NPC level <select id="lan-skill"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>
+   <button class="primary" id="lan-start">START NETWORK RACE</button>
+  </div>
+ </div>
+ <div id="lan-roster" aria-label="Players in room"></div>
+ <p id="lan-message" role="status">Join from any PC on the same LAN.</p>
+ <p class="small">Controls: WASD / Xbox RT LT + left stick · Shift / A ascend · Q / LB descend · Space / B nitro. LAN uses an experimental host physics model, not yet full Ammo parity.</p>
+</div>
+<div class="lan-hud" id="lan-hud" hidden><b id="lan-speed">0 km/h</b><span id="lan-progress">Lap 0 / 3</span><span id="lan-rank">Position 1</span><span id="lan-next">Next gate 1</span></div>
+<div class="lan-countdown" id="lan-countdown" hidden>3</div>
+<div class="lan-results" id="lan-results" hidden><h1 id="lan-winner">WINNER!</h1><div id="lan-standings"></div><button id="lan-back">BACK TO LOBBY</button></div>
+<script type="module" src="/src/network/client.js"></script></body></html>

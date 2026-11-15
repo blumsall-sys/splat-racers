@@ -1,0 +1,11 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const base=fileURLToPath(new URL('../',import.meta.url));
+const dist=path.join(base,'dist');
+await fs.rm(dist,{recursive:true,force:true});await fs.mkdir(dist,{recursive:true});
+await fs.copyFile(path.join(base,'index.html'),path.join(dist,'index.html'));
+await fs.cp(path.join(base,'src'),path.join(dist,'src'),{recursive:true});
+await fs.cp(path.join(base,'assets'),path.join(dist,'assets'),{recursive:true});
+await fs.writeFile(path.join(dist,'.nojekyll'),'');
+console.log('Static GitHub Pages build: '+dist);
