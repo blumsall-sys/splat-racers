@@ -31,11 +31,13 @@ import {requirePhysicsBackend} from './physics-startup-guard.js';
 import {sampleRoadSupport} from './road-support.js';
 import {readStoredCalibration,saveStoredCalibration,clearStoredCalibration} from './sog-calibration-store.js';
 import {chooseWallMode,collisionObjectName} from './collision-policy.js';
+import {createAmmoHostAdapter} from '../network/ammo-host.js';
+import {mountAmmoHostUI} from '../network/ammo-host-ui.js';
 const $=s=>document.getElementById(s),base=import.meta.env.BASE_URL;
 const canvas=$('viewport'),menu=$('menu'),finish=$('win-screen'),loading=$('status');
 let menuNavigator=null;
 let app=null,controls=null,world=null,cameras=[],props=[],sceneData=null,paused=true,mode=null,difficulty='medium';
-let calibration=null,geometry=null,roadHits=null,ammoInstance=null,routeMarkers=null;
+let calibration=null,geometry=null,roadHits=null,ammoInstance=null,routeMarkers=null,onlineAdapter=null;
 let selectedLaps=3,selectedRaceSpeed=1,catalog=[],vehicleAssets=new Map(),airGates=[],flightCourseReport={ok:true,warnings:[]};
 let pendingMode='solo',menuStage='home',settingsReturn='home',countdownEpoch=0,countdownActive=false;
 let time=0,contacts=0,lastContact='none',wallMode='mesh',showDebug=new URLSearchParams(location.search).has('debug');
@@ -102,7 +104,7 @@ function beginCountdown(){
   const elapsed=(now-started)/1000;
   const value=elapsed<1?'3':elapsed<2?'2':elapsed<3?'1':'GO!';
   if(previous!==value){num.textContent=value;num.style.animation='none';void num.offsetWidth;num.style.animation='count-pop .25s ease-out';previous=value;}
-  if(elapsed>=3&&countdownActive){countdownActive=false;controls.keys.clear();controls.beginRace();app.timeScale=1;}
+  if(elapsed>=3&&countdownActive){countdownActive=false;controls.keys.clear();controls.beginRace();app.timeScale=1;if(mode==='online')onlineAdapter?.setPhase('race');}
   if(elapsed>=3.65){panel.hidden=true;return;}
   requestAnimationFrame(tick);
  }
@@ -164,10 +166,25 @@ function start(which){
  app.systems.rigidbody.fixedTimeStep=selectedRaceSpeed>=2?1/120:1/60;
  app.systems.rigidbody.maxSubSteps=selectedRaceSpeed>=2?10:5;
  time=0;update.lastHud=-10;contacts=0;lastContact='none';
- const humans=which==='local'?2:1;
- const count=which==='explore'?0:Math.min(4-humans,Number($('npc-count').value)||0);
- const roster=which==='explore'?raceRoster(1,0):raceRoster(humans,count);
- const humanChoices=roster.filter(entry=>entry.human).map(entry=>$(entry.id+'-vehicle').value);
+ const online=which==='online';
+ if(online&&!onlineAdapter)throw Error('Native Ammo host was not initialized');
+ if(online){
+  const settings=onlineAdapter.settings();
+  selectedLaps=configuredRaceTarget(settings.laps);
+  selectedRaceSpeed=raceSpeedMultiplier(settings.pace);
+  difficulty=settings.difficulty;
+  app.systems.rigidbody.fixedTimeStep=selectedRaceSpeed>=2?1/120:1/60;
+  app.systems.rigidbody.maxSubSteps=selectedRaceSpeed>=2?10:5;
+ }
+ const humans=online?onlineAdapter.humanCount():which==='local'?2:1;
+ const count=online?onlineAdapter.settings().npcCount:which==='explore'?0:Math.min(4-humans,Number($('npc-count').value)||0);
+ const roster=online?[
+  ...onlineAdapter.roster(),
+  ...onlineAdapter.aiIds().map((id,i)=>({id,human:false,label:'NPC '+(i+1)}))
+ ]:which==='explore'?raceRoster(1,0):raceRoster(humans,count);
+ const humanChoices=online
+   ?['p1','p2','p3','p4'].map(id=>catalog.find(v=>v.type===onlineAdapter.vehicleFor(id))?.id||'kart')
+   :roster.filter(entry=>entry.human).map(entry=>$(entry.id+'-vehicle').value);
  const selected=npcAirChoice(roster,humanChoices,catalog,airGates.length);
  if(!world||world.cars.length!==selected.length||world.cars.some((car,i)=>car.spec.id!==selected[i]||car.id!==roster[i].id||car.isNpc!==!roster[i].human)){
   if(world)for(const car of world.cars){if(car.raycast)disposeRaycastVehicle(car);for(const wheel of car.wheels||[])wheel.visual?.destroy();car.entity.destroy();}
@@ -214,6 +231,7 @@ function pause(value=true){
 }
 function finishRace(){
  const winner=world.race.winner;
+ if(mode==='online')onlineAdapter?.setPhase('results');
  cancelCountdown();paused=true;app.timeScale=0;controls.keys.clear();
  for(const car of world.cars)if(car.raycast)stopRaycastVehicle(car);
  const results=racerResults(world.cars,world.race,c=>c.spec.type==='KART'?world.track.race.gates.length:airGates.length);
@@ -269,7 +287,7 @@ function update(dt){
   time+=Math.min(dt,.08);world.elapsed=time;
   const inputs=controls.sample();
   for(const car of world.cars){
-   let input=inputs[car.id];
+   let input=mode==='online'&&!car.isNpc?onlineAdapter.inputFor(car.id,inputs.p1):inputs[car.id];
    if(car.isNpc){
     if(car.spec.type==='KART'){
      const obstacle=scanNpcObstacle(app.systems.rigidbody,car,pc.Vec3);
@@ -412,7 +430,7 @@ function update(dt){
    const notice=$(car.id+'-notice');if(notice)notice.hidden=!(notice.textContent&&time<(car.gateNoticeUntil||0));
   }
   if(!world.cars.some(c=>c.id==='p2'&&!c.isNpc))routeMarkers?.update('p2',null,undefined,time);
-  $('mode-label').textContent=mode==='explore'?'FREE DRIVE · OPEN WORLD':`${mode==='solo'?'SOLO':'LOCAL CO-OP'} · ${world.cars.length} RACERS`;
+  $('mode-label').textContent=mode==='explore'?'FREE DRIVE · OPEN WORLD':`${mode==='solo'?'SOLO':mode==='online'?'ONLINE / AMMO':'LOCAL CO-OP'} · ${world.cars.length} RACERS`;
   $('gamepad-hint').textContent=controls.padNames.length?controls.padNames.length+' gamepad(s) detected':'ESC / START = PAUSE';
   $('debug-data').hidden=!showDebug;
   if(showDebug)$('debug-data').textContent=`Ammo btRaycastVehicle · mesh colliders: ${sceneData.meshes} · SOG: ${sceneData.sog?'ON':'OFF'} · contacts: ${contacts} · last: ${lastContact} · walls: ${wallMode} · props: ${props.length} · steering: native wheel physics\n`+world.cars.map(c=>`${c.id} x=${c.x.toFixed(2)} z=${c.z.toFixed(2)} speed=${(c.wheelDiagnostics?.speedKmh??0).toFixed(1)} km/h gas=${(c.input?.throttle||0).toFixed(1)} steer=${(c.input?.steer||0).toFixed(1)} wheelSteer=${(c.driverDiagnostics?.steeringRadians??0).toFixed(2)} heading=${c.entity.getEulerAngles().y.toFixed(1)} yawVel=${c.entity.rigidbody.angularVelocity.y.toFixed(2)} engine=${(c.driverDiagnostics?.engine??0).toFixed(0)} brake=${(c.driverDiagnostics?.brake??0).toFixed(1)} drift=${!!c.driftState?.active} wheels=${c.raycast?.vehicle?.getNumWheels?.()??0} pitch=${c.entity.getEulerAngles().x.toFixed(1)} roll=${c.entity.getEulerAngles().z.toFixed(1)} contact=${c.wheelDiagnostics?.probes??'?'} susp=${(c.wheelDiagnostics?.suspensionLength??0).toFixed(2)} vy=${c.entity.rigidbody.linearVelocity.y.toFixed(2)}`).join('\n')+(world.cars.some(c=>c.isNpc)?`\nNPC recovery: ${world.cars[1]?.npcDiagnostics?.phase||'FOLLOW'} · stuck ${Number(world.cars[1]?.npcDiagnostics?.stuck||0).toFixed(1)}s · offroad ${Number(world.cars[1]?.npcDiagnostics?.offroad||0).toFixed(1)}s · attempts ${world.cars[1]?.npcDiagnostics?.attempts||0} · avoid ${world.cars[1]?.npcDiagnostics?.avoidance||0} · bearing ${Number(world.cars[1]?.npcDiagnostics?.bearing||0).toFixed(2)}rad · target ${Number(world.cars[1]?.npcDiagnostics?.targetSpeed||0).toFixed(1)}m/s · lineErr ${Number(world.cars[1]?.npcDiagnostics?.nearest||0).toFixed(1)}m · trapped ${Number(world.cars[1]?.npcDiagnostics?.trappedFor||0).toFixed(1)}s · rescueCooldown ${Number(world.cars[1]?.npcDiagnostics?.respawnCooldown||0).toFixed(1)}s`:'');
@@ -547,6 +565,14 @@ async function initialize(){
   app.timeScale=0;
   setStatus(`Ready: ${pack.packId} · vehicle choices: ${catalog.length} · air rings: ${airGates.length} · terrain meshes: ${geometry.staticInfo.count} · primitive colliders: ${geometry.primitiveInfo.count} · walls: ${wallMode} (${geometry.wallInfo.count} boxes) · SOG: ${geometry.splat?'loaded':'not configured'}.${flightCourseReport.ok?'':` FLIGHT ROUTE WARNING: ${flightCourseReport.warnings[0]}`} Select a mode.`);
   setMenu();
+  if(new URLSearchParams(location.search).has('online-host')){
+   onlineAdapter=createAmmoHostAdapter({
+    getWorld:()=>world,
+    startRace:()=>start('online'),
+    backToLobby:()=>{stopAndClearRace();stage('home');}
+   });
+   mountAmmoHostUI(onlineAdapter,track);
+  }
   const alignmentIds=['sog-x','sog-y','sog-z','sog-rx','sog-ry','sog-rz','sog-scale'];
   const readCalibration=()=>validateAlignment({position:alignmentIds.slice(0,3).map(id=>Number($(id).value)),rotationEuler:alignmentIds.slice(3,6).map(id=>Number($(id).value)),scale:Number($('sog-scale').value)});
   if(geometry.splatGroup){
