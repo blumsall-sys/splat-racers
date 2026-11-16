@@ -20,7 +20,7 @@
     "collisions:check": "node scripts/check-collisions.mjs",
     "road:check": "node scripts/check-road-quality.mjs",
     "qa:native": "node scripts/qa-native-vehicle.mjs",
-    "lan": "node scripts/lan-server.mjs",
+    "lan": "vite --host 0.0.0.0 --port 5173",
     "bench:npc": "node scripts/benchmark-npc.mjs",
     "bench:air": "node scripts/benchmark-air-npc.mjs",
     "bench:flight-force": "node scripts/benchmark-flight-force.mjs",

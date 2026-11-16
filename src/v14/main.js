@@ -31,8 +31,7 @@ import {requirePhysicsBackend} from './physics-startup-guard.js';
 import {sampleRoadSupport} from './road-support.js';
 import {readStoredCalibration,saveStoredCalibration,clearStoredCalibration} from './sog-calibration-store.js';
 import {chooseWallMode,collisionObjectName} from './collision-policy.js';
-import {createAmmoHostAdapter} from '../network/ammo-host.js';
-import {mountAmmoHostUI} from '../network/ammo-host-ui.js';
+
 const $=s=>document.getElementById(s),base=import.meta.env.BASE_URL;
 const canvas=$('viewport'),menu=$('menu'),finish=$('win-screen'),loading=$('status');
 let menuNavigator=null;
@@ -566,6 +565,7 @@ async function initialize(){
   setStatus(`Ready: ${pack.packId} · vehicle choices: ${catalog.length} · air rings: ${airGates.length} · terrain meshes: ${geometry.staticInfo.count} · primitive colliders: ${geometry.primitiveInfo.count} · walls: ${wallMode} (${geometry.wallInfo.count} boxes) · SOG: ${geometry.splat?'loaded':'not configured'}.${flightCourseReport.ok?'':` FLIGHT ROUTE WARNING: ${flightCourseReport.warnings[0]}`} Select a mode.`);
   setMenu();
   if(new URLSearchParams(location.search).has('online-host')){
+   const [{createAmmoHostAdapter},{mountAmmoHostUI}]=await Promise.all([import('../network/ammo-host.js'),import('../network/ammo-host-ui.js')]);
    onlineAdapter=createAmmoHostAdapter({
     getWorld:()=>world,
     startRace:()=>start('online'),

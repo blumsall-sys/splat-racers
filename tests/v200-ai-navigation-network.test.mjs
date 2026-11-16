@@ -7,7 +7,6 @@ import {planNpcTraffic,scanNpcWorldObstacles} from '../src/race/npc-traffic.js';
 import {isNpcObstacleEntity,scanNpcObstacle} from '../src/race/npc-perception.js';
 import {NPC_SKILL,npcRacerState,stepRaycastNpc} from '../src/race/raycast-npc.js';
 import {graphicsConfiguration,GRAPHICS_PRESETS} from '../src/render/graphics-quality.js';
-import {makeLanState,joinLan,sendLanInput,startLanRace,setLanReady,setLanVehicle,stepLan,lanSnapshot} from '../src/network/host-core.js';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
 test('P1–P4, props and barriers are visible to NPC sensor; own body is excluded',()=>{
@@ -54,42 +53,6 @@ test('LAN analytic obstacle sweep detects a visible crate without sensing a dist
  assert(scan&&scan.type==='dynamic'&&scan.distance>3,JSON.stringify(scan));
 });
 
-test('LAN room supports four authenticated players but never fifth; server owns poses and laps',()=>{
- let now=1000;let next=0;
- const state=makeLanState(TRAINING_TRACK,{now:()=>now,makeId:()=>`session${++next}`});
- const sessions=[];
- for(let i=0;i<4;i++)sessions.push(joinLan(state,'Test'+i));
- assert.deepEqual(sessions.map(p=>p.id),['p1','p2','p3','p4']);
- assert.throws(()=>joinLan(state,'Fifth'),/full/i);
- assert.equal(sendLanInput(state,'fake',{seq:1,throttle:1,x:100}),false);
- assert.equal(sendLanInput(state,sessions[0].token,{seq:1,throttle:900,x:1000,z:2000,laps:9}),true);
- const p1=state.participants.get(sessions[0].token);
- assert.equal(p1.input.throttle,1);assert.equal('x' in p1.input,false);assert.equal('laps' in p1.input,false);
- assert.equal(sendLanInput(state,sessions[0].token,{seq:1,throttle:-1}),false);
- assert.equal(p1.x,TRAINING_TRACK.spawns.p1.x);
- assert.equal(setLanVehicle(state,sessions[1].token,'DRONE'),true);
- for(const item of sessions)assert.equal(setLanReady(state,item.token,true),true);
- assert.throws(()=>startLanRace(state,sessions[1].token,{npcCount:0,laps:1}),/Only the room host/);
- assert.equal(startLanRace(state,sessions[0].token,{npcCount:0,laps:1}),true);
- assert.equal(state.phase,'countdown');now=4600;stepLan(state,1/60);assert.equal(state.phase,'race');
- for(let i=0;i<120;i++){now+=16;stepLan(state,1/60);}
- const snapshot=lanSnapshot(state);
- assert.equal(snapshot.racers.length,4);assert.equal(snapshot.maxRacers,4);
- assert.equal(snapshot.racers[0].laps,state.race.per.p1.laps);
- assert(snapshot.racers.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.z)));
-});
-
-test('LAN solo host can fill other three slots with NPCs and preserve checkpoints',()=>{
- let now=0;const s=makeLanState(TRAINING_TRACK,{now:()=>now,makeId:()=> 'host'});
- const host=joinLan(s,'Host');assert.equal(setLanReady(s,host.token,true),true);
- assert.equal(startLanRace(s,host.token,{npcCount:3,laps:3,difficulty:'easy',pace:1}),true);
- assert.deepEqual([...s.ai.keys()],['p2','p3','p4']);
- now=4000;for(let i=0;i<600;i++)stepLan(s,1/60);
- assert.equal(lanSnapshot(s).racers.length,4);
- assert(s.ai.size===3);assert(s.race);
- assert(s.ai.get('p2').npcState?.phase);
-});
-
 test('graphics choice preserves GLB UVs and limits author exposure while keeping backend WebGL',()=>{
  assert.equal(GRAPHICS_PRESETS.balanced.shadowResolution,1536);
  assert(graphicsConfiguration('quality',{rendering:{exposure:1.4,fogDistance:150}}).exposure>1.3);
@@ -102,13 +65,3 @@ test('graphics choice preserves GLB UVs and limits author exposure while keeping
  assert.match(read('blender_addon/lab5_splat_packager/__init__.py'),/render_environment_atlas/);
 });
 
-test('three medium NPCs escape traffic congestion and produce a winner on training circuit',()=>{
- let now=0;
- const state=makeLanState(TRAINING_TRACK,{now:()=>now,makeId:()=> 'host'});
- const host=joinLan(state,'Parked human');setLanReady(state,host.token,true);
- startLanRace(state,host.token,{npcCount:3,laps:1,pace:1,difficulty:'medium'});
- now=4000;
- for(let i=0;i<60*120&&state.phase!=='results';i++)stepLan(state,1/60);
- assert.equal(state.phase,'results','three-NPC traffic jam should end with a race winner within 120 simulated seconds');
- assert.equal(lanSnapshot(state).winner,'p2');
-});
