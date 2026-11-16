@@ -12,10 +12,10 @@
 </div>
 <div id="countdown" class="countdown-overlay" aria-live="assertive" hidden><div class="countdown-kicker">GET READY</div><div id="countdown-number" class="countdown-number">3</div><div class="countdown-footer">RACE START</div></div>
 <div id="menu" class="backdrop"><section class="menu-card" aria-label="Race menu">
- <div class="eyebrow">LAB5 / BUMPER LAB · LOCAL RACING</div>
- <div class="menu-stage" data-stage="home"><h1>SPLAT RACERS</h1><p>Pick how many people are playing.</p>
+ <div class="eyebrow">LOCAL PLAY · SOLO OR SPLIT-SCREEN</div>
+ <div class="menu-stage" data-stage="home"><h1>SPLAT RACERS</h1><p>Choose local play or invite friends to an online room.</p>
   <p class="touch-help">Steer with your left thumb. In flight, slide up to climb or down to descend. Hold Gas and slide to Turbo for a boost.</p><div class="menu-choice"><button id="solo-btn" type="button" class="primary"><span>01</span><strong>ONE PLAYER</strong><small>Race solo or with up to 3 computer opponents</small></button><button id="local-btn" type="button" class="primary coral"><span>02</span><strong>TWO PLAYERS</strong><small>Split-screen with up to 2 computer opponents</small></button></div>
-  <button id="open-settings-btn" class="secondary" type="button">SETTINGS &amp; CONTROLS</button></div>
+  <a class="online-link" href="./LAN.html?online">Online · Create or join a room</a><button id="open-settings-btn" class="secondary" type="button">SETTINGS &amp; CONTROLS</button></div>
  <div class="menu-stage" data-stage="setup" hidden><h1>RACE SETUP</h1><p>Choose your course rules. Maximum four racers on the grid.</p>
   <label class="difficulty-picker" for="npc-count">Computer racers <select id="npc-count" aria-label="Computer racers"><option value="0">None</option><option value="1" selected>1 NPC</option><option value="2">2 NPCs</option><option value="3">3 NPCs</option></select></label>
   <label class="difficulty-picker" for="ai-difficulty">Opponent difficulty <select id="ai-difficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>

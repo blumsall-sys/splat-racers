@@ -3,7 +3,7 @@ import {trackEffect} from '../race/track-effect.js';
  * This is a self-contained fixed-step, kinematic arcade controller for LAN
  * testing, not yet a headless Ammo raycast vehicle. No browser / PlayCanvas.
  */
-import {randomUUID} from 'node:crypto';
+const randomUUID=()=>globalThis.crypto.randomUUID();
 import {ensureGridSpawns,racerResults} from '../race/roster.js';
 import {makeLapState,updateLaps} from '../race/laps.js';
 import {stepRaycastNpc,npcRacerState} from '../race/raycast-npc.js';

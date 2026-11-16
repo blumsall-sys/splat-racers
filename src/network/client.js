@@ -17,6 +17,22 @@ app.scene.ambientLight=new pc.Color(.4,.5,.59);app.start();
 addLights(app,[]);
 const camera=new pc.Entity('LAN chase camera');camera.addComponent('camera',{clearColor:new pc.Color(.08,.16,.21),farClip:5000,fov:65});app.root.addChild(camera);
 const keys=new Controls(),cars=new Map(),snapshots=new Map();let lastData=null,token=null,playerId=null,stream=null,seq=1,ready=false,track=null,pack=null,vehicleSpecs=[];
+const params=new URLSearchParams(location.search),online=params.has('online')||params.has('room');
+let transport;
+if(online){
+ document.title='Splat Racers · Online';
+ document.querySelector('.topbar span').textContent='ONLINE';
+ document.querySelector('#lan-lobby h1').textContent='Online rooms';
+ document.querySelector('#lan-lobby p').textContent='Create a room or enter an invite code. Up to four racers. The host keeps this tab open.';
+ $('lan-message').textContent='Enter a code from your host or create a room.';
+ document.querySelector('#lan-lobby .small').textContent='The host runs the race in their browser. Keep the game open while racing.';
+ $('online-actions').hidden=false;$('room-code').value=params.get('room')||'';
+ $('create-room').onclick=()=>enter(true);
+ $('share-room').onclick=async()=>{const url=$('invite-url').value;try{
+ if(navigator.share)await navigator.share({title:'Race with me in Splat Racers',url});
+ else {await navigator.clipboard.writeText(url);$('lan-message').textContent='Invite link copied.';}
+ }catch{ $('invite-url').select(); }};
+}
 const palette=[[.63,.89,.35],[.98,.52,.39],[.51,.76,.99],[.95,.78,.42]];
 function material(color){const m=new pc.StandardMaterial();m.diffuse=new pc.Color(...color);m.metalness=.18;m.gloss=.47;m.update();return m;}
 function box(parent,name,scale,offset,mat){const e=new pc.Entity(name);e.addComponent('render',{type:'box',material:mat,castShadows:true});e.setLocalScale(...scale);e.setLocalPosition(...offset);parent.addChild(e);return e;}
@@ -78,6 +94,7 @@ function onSnapshot(data){
  if(data.phase==='countdown')$('lan-countdown').textContent=String(Math.max(1,Math.ceil(data.countdownMs/1000)));
  $('lan-results').hidden=data.phase!=='results';
  if(data.phase==='results'){
+  $('lan-back').hidden=online&&playerId!=='p1';
   const champion=data.racers.find(p=>p.id===data.winner);
   $('lan-winner').textContent=(champion?.label||data.winner||'UNKNOWN').toUpperCase()+' WINS!';
   $('lan-standings').replaceChildren(...data.standings.map(p=>{const e=document.createElement('div');e.textContent=`${p.place}. ${p.label} — ${p.laps} laps`;return e;}));
@@ -85,22 +102,36 @@ function onSnapshot(data){
  if(data.phase==='lobby')$('lan-after-join').hidden=!token;
  const self=data.racers.find(p=>p.id===playerId);
  if(self){
+  if(data.phase==='lobby'){ready=self.ready;$('lan-ready').textContent=ready?'CANCEL READY':'READY';}
   $('lan-speed').textContent=Math.round(Math.abs(self.speed)*3.6)+' km/h';
   $('lan-progress').textContent=`Lap ${self.laps} / ${data.settings.laps}`;
   $('lan-next').textContent=`Next checkpoint ${self.next+1}`;
   $('lan-rank').textContent='Position '+(data.standings.find(p=>p.id===self.id)?.place||'—');
  }
 }
-async function call(endpoint,payload){const r=await fetch('/api/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok||d.ok===false)throw Error(d.error||'Action denied');return d;}
+async function call(endpoint,payload){if(online)return transport.call(endpoint,payload);const r=await fetch('/api/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok||d.ok===false)throw Error(d.error||'Action denied');return d;}
 function report(err){$('lan-message').textContent='Error: '+err.message;}
-$('lan-join').onclick=async()=>{try{
+$('lan-join').onclick=()=>enter(false);
+async function enter(create){try{
+ if(online){
+  if(!track)throw Error('Track is loading. Try again shortly.');
+  const code=$('room-code').value.trim().toUpperCase();
+  if(!create&&!code)throw Error('Enter a room code or choose Create room.');
+  $('lan-join').disabled=$('create-room').disabled=true;$('lan-message').textContent='Connecting…';
+  const {openRoom}=await import('./online-room.js');
+  transport=await openRoom(create?'':code,track,onSnapshot,msg=>{token=null;$('lan-lobby').hidden=false;$('lan-hud').hidden=true;$('lan-results').hidden=true;$('lan-countdown').hidden=true;$('lan-message').textContent=msg;$('lan-after-join').hidden=true;$('lan-join').disabled=$('create-room').disabled=false;});
+ }
+
  const d=await call('join',{name:$('lan-name').value});token=d.token;playerId=d.id;
  $('lan-after-join').hidden=false;$('lan-player-id').textContent=`YOU ARE ${d.id.toUpperCase()}`;
  $('lan-host-settings').hidden=d.id!=='p1';$('lan-join').disabled=true;
+ if(online){const url=new URL(location.href);url.search='';url.searchParams.set('room',transport.code);
+ $('invite-url').value=url.href;$('active-code').textContent=transport.code;$('invite-tools').hidden=false;
+ $('lan-message').textContent='Choose a vehicle and mark yourself ready.';return;}
  stream?.close();stream=new EventSource('/api/events?token='+encodeURIComponent(token));
  stream.addEventListener('snapshot',e=>onSnapshot(JSON.parse(e.data)));
  stream.onerror=()=>{$('lan-connection').textContent='RECONNECTING…';};
- }catch(err){report(err);}};
+ }catch(err){if(online){transport?.close('');$('lan-join').disabled=$('create-room').disabled=false;}report(err);}}
 $('lan-vehicle').onchange=async()=>{try{await call('vehicle',{token,vehicle:$('lan-vehicle').value});ready=false;$('lan-ready').textContent='READY';}catch(err){report(err);}};
 $('lan-ready').onclick=async()=>{try{ready=!ready;await call('ready',{token,ready});$('lan-ready').textContent=ready?'CANCEL READY':'READY';}catch(err){report(err);}};
 $('lan-start').onclick=async()=>{try{await call('start',{token,npcCount:+$('lan-npcs').value,laps:+$('lan-laps').value,pace:+$('lan-pace').value,difficulty:$('lan-skill').value});}catch(err){report(err);}};

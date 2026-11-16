@@ -1,3 +1,4 @@
+.online-link{display:block;background:#bce95b;color:#12332f;padding:13px;margin:10px 0;text-align:center;border-radius:10px;text-decoration:none;font-weight:800}
 :root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#ecf3e9;background:#102e3a;font-synthesis:none}
 *{box-sizing:border-box}html,body{height:100%;width:100%;margin:0;overflow:hidden}button{font-family:inherit;cursor:pointer;border:0;color:inherit;touch-action:manipulation}button:focus-visible{outline:3px solid #d7f6a8;outline-offset:3px} [hidden]{display:none!important}
 #viewport{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;background:#1a3842}
