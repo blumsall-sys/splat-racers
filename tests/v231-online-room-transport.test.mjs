@@ -69,6 +69,7 @@ test('Host adapter passes four players through native race callbacks and snapsho
   assert.equal(snapshot.racers[0].x,10);
   assert.equal(snapshot.racers[0].y,3);
   assert.deepEqual(snapshot.racers[0].rotation,[0,0,0,1]);
+  adapter.setPhase('race');
   await guests[0].call('input',{seq:1,throttle:9,steer:-3,x:999999,laps:100});
   await until(()=>adapter.inputFor('p2',{}).throttle===1);
   const input=adapter.inputFor('p2',{});
