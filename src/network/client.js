@@ -17,17 +17,17 @@ app.scene.ambientLight=new pc.Color(.4,.5,.59);app.start();
 addLights(app,[]);
 const camera=new pc.Entity('LAN chase camera');camera.addComponent('camera',{clearColor:new pc.Color(.08,.16,.21),farClip:5000,fov:65});app.root.addChild(camera);
 const keys=new Controls(),cars=new Map(),snapshots=new Map();let lastData=null,token=null,playerId=null,stream=null,seq=1,ready=false,track=null,pack=null,vehicleSpecs=[];
-const params=new URLSearchParams(location.search),online=params.has('online')||params.has('room');
+const params=new URLSearchParams(location.search),online=true; // Shared native Ammo host is the only network racing route.
 let transport;
 if(online){
  document.title='Splat Racers · Online';
  document.querySelector('.topbar span').textContent='ONLINE';
  document.querySelector('#lan-lobby h1').textContent='Online rooms';
  document.querySelector('#lan-lobby p').textContent='Create a room or enter an invite code. Up to four racers. The host keeps this tab open.';
- $('lan-message').textContent='Enter a code from your host or create a room.';
- document.querySelector('#lan-lobby .small').textContent='The host runs the race in their browser. Keep the game open while racing.';
+ $('lan-message').textContent='Join with your invite code. Create room launches the native Ammo racing host.';
+ document.querySelector('#lan-lobby .small').textContent='The host runs the same PlayCanvas/Ammo raycast-vehicle race as local mode. Guests receive authoritative physics snapshots.';
  $('online-actions').hidden=false;$('room-code').value=params.get('room')||'';
- $('create-room').onclick=()=>enter(true);
+ $('create-room').onclick=()=>{location.href=new URL('./?online-host=1',location.href).href;};
  $('share-room').onclick=async()=>{const url=$('invite-url').value;try{
  if(navigator.share)await navigator.share({title:'Race with me in Splat Racers',url});
  else {await navigator.clipboard.writeText(url);$('lan-message').textContent='Invite link copied.';}
@@ -126,23 +126,7 @@ async function enter(create){try{
   if(!create&&!code)throw Error('Enter a room code or choose Create room.');
   $('lan-join').disabled=$('create-room').disabled=true;$('lan-message').textContent='Connecting…';
   const {openRoom}=await import('./online-room.js');
-  let surface=null;
-  if(create){
-   $('lan-message').textContent='Loading Blender road collision for network host…';
-   const {createNetworkRoadSurface}=await import('./road-surface.js');
-   try{
-    if(!pack?.staticCollisionGlb)throw Error('No collision GLB configured');
-    const url=new URL('./assets/'+pack.staticCollisionGlb,location.href);
-    const response=await fetch(url);
-    if(!response.ok)throw Error('Road collision HTTP '+response.status);
-    surface=createNetworkRoadSurface(track,await response.arrayBuffer());
-    console.info('[Splat Racers online] Road surface ready:',surface.source,surface.triangles,'triangles');
-   }catch(err){
-    console.warn('[Splat Racers online] Collision mesh unavailable; using Blender navigation road height',err);
-    surface=createNetworkRoadSurface(track);
-   }
-  }
-  transport=await openRoom(create?'':code,track,onSnapshot,msg=>{token=null;$('lan-lobby').hidden=false;$('lan-hud').hidden=true;$('lan-results').hidden=true;$('lan-countdown').hidden=true;$('lan-message').textContent=msg;$('lan-after-join').hidden=true;$('lan-join').disabled=$('create-room').disabled=false;},{surface});
+  transport=await openRoom(code,track,onSnapshot,msg=>{token=null;$('lan-lobby').hidden=false;$('lan-hud').hidden=true;$('lan-results').hidden=true;$('lan-countdown').hidden=true;$('lan-message').textContent=msg;$('lan-after-join').hidden=true;$('lan-join').disabled=$('create-room').disabled=false;});
  }
 
  const d=await call('join',{name:$('lan-name').value});token=d.token;playerId=d.id;
@@ -170,7 +154,9 @@ app.on('update',dt=>{
   v.position.x+=(p.x-v.position.x)*blend;v.position.y+=(p.y-v.position.y)*blend;v.position.z+=(p.z-v.position.z)*blend;
   // Host snapshot Y is the chassis world-space height (including road clearance).
   // The old extra +0.95 offset masked flat-ground errors and disconnected wheels.
-  v.yaw=lerpAngle(v.yaw,p.yaw,blend);v.root.setPosition(v.position.x,v.position.y,v.position.z);v.root.setEulerAngles(0,v.yaw*180/Math.PI,0);
+  v.yaw=lerpAngle(v.yaw,p.yaw,blend);v.root.setPosition(v.position.x,v.position.y,v.position.z);
+  if(Array.isArray(p.rotation)&&p.rotation.length===4){v.root.setRotation(new pc.Quat(...p.rotation));}
+  else v.root.setEulerAngles(0,v.yaw*180/Math.PI,0);
  }
  const target=cars.get(playerId);
  if(target){const f={x:Math.sin(target.yaw),z:Math.cos(target.yaw)};
