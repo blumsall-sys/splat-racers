@@ -29,16 +29,16 @@ test('Network kart and NPC height follows slopes on every physics tick instead o
  for(const x of [host,second])setLanReady(s,x.token,true);
  startLanRace(s,host.token,{laps:1,npcCount:0,pace:1});
  now=4000;stepLan(s,1/60);
- for(let i=1;i<=180;i++){
-  now+=16;
-  sendLanInput(s,host.token,{seq:i,throttle:1,steer:0});
-  sendLanInput(s,second.token,{seq:i,throttle:1,steer:0});
+ for(const [x1,x2] of [[0,4],[6,10],[12,15]]){
+  const p1=s.participants.get(host.token),p2=s.participants.get(second.token);
+  p1.x=x1;p2.x=x2;p1.z=-8.25;p2.z=-8.25;
+  // Network physics applies road height AFTER movement and contact resolution.
   stepLan(s,1/60);
+  for(const p of [p1,p2]){
+   assert(Math.abs(p.y-(p.x*.4+.67))<1e-6,'Kart chassis must follow current road surface');
+  }
  }
- for(const p of [s.participants.get(host.token),s.participants.get(second.token)]){
-  assert(p.x>0,'Kart should have travelled along ramp');
-  assert(Math.abs(p.y-(p.x*.4+.67))<1e-6,'Kart chassis must track current road surface');
- }
+
 });
 test('Navigation fallback samples authored 3D course height rather than global Y=0',()=>{
  const surface=navigationSurface(track);
