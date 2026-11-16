@@ -1,4 +1,5 @@
 import {trackEffect} from '../race/track-effect.js';
+import {createNetworkRoadSurface} from './road-surface.js';
 /** Experimental LAN host simulation. All positions/laps are server-owned.
  * This is a self-contained fixed-step, kinematic arcade controller for LAN
  * testing, not yet a headless Ammo raycast vehicle. No browser / PlayCanvas.
@@ -20,11 +21,25 @@ export function cleanInput(data={}){
   ascend:!!data.ascend,descend:!!data.descend,boost:!!data.boost,
   seq:clamp(Math.floor(limit(Number(data.seq))),0,2147483647)};
 }
-export function makeLanState(track,{now=()=>Date.now(),makeId=randomUUID}={}){
+export function makeLanState(track,{now=()=>Date.now(),makeId=randomUUID,surface=createNetworkRoadSurface(track)}={}){
  const spawns=ensureGridSpawns(track.spawns);
- const state={track,spawns,phase:'lobby',participants:new Map(),npcCount:0,laps:3,pace:1,difficulty:'medium',
+ const state={track,spawns,surface,phase:'lobby',participants:new Map(),npcCount:0,laps:3,pace:1,difficulty:'medium',
   ai:new Map(),race:null,startedAt:null,finishedAt:null,countdownTo:null,now,makeId,tick:0,simClock:0};
  return state;
+}
+const KART_RIDE_HEIGHT=.67;
+function roadAt(s,p){
+ // Host-authoritative surface support, matching exported collision coordinates.
+ // Negative/positive grades both work; do not anchor a kart to its spawn Y.
+ const sample=s.surface.sample(p.x,p.z,p.y-KART_RIDE_HEIGHT);
+ return sample;
+}
+function seatRacer(s,p){
+ const road=roadAt(s,p);
+ const clearance=p.vehicle==='KART'?KART_RIDE_HEIGHT:p.vehicle==='DRONE'?3.1:2.45;
+ p.y=road.height+clearance;
+ p.vy=0;
+ p.lastRoad={x:p.x,z:p.z,y:road.height,yaw:p.yaw};
 }
 function availableId(s){return ['p1','p2','p3','p4'].find(id=>![...s.participants.values()].some(p=>p.id===id))||null;}
 export function joinLan(s,name='RACER'){
@@ -34,6 +49,7 @@ export function joinLan(s,name='RACER'){
   vehicle:'KART',ready:false,input:cleanInput(),inputSeq:0,lastInputMs:s.now(),x:s.spawns[id].x,z:s.spawns[id].z,
   y:s.spawns[id].y??0,yaw:s.spawns[id].yaw||0,speed:0,vy:0,vx:0,vz:0,boostLeft:0,boostCooldown:0,
   isNpc:false};
+ seatRacer(s,player);
  s.participants.set(token,player);return {token,id};
 }
 export function leaveLan(s,token){const p=s.participants.get(token);if(!p)return false;s.participants.delete(token);if(s.phase==='countdown'||s.phase==='race'){
@@ -64,7 +80,7 @@ export function startLanRace(s,token,{npcCount=0,laps=3,pace=1,difficulty='mediu
    speed:0,vx:0,vz:0,vy:0,npcState:npcRacerState(),input:cleanInput()});
  }
  for(const player of racers){const sp=s.spawns[player.id];Object.assign(player,{x:sp.x,z:sp.z,y:sp.y??0,yaw:sp.yaw||0,speed:0,vx:0,vz:0,vy:0,effectTime:0,effectZone:null,boostLeft:0,boostCooldown:0,input:cleanInput(),inputSeq:0});}
- const all=[...racers,...s.ai.values()];s.race=makeLapState(s.track,s.laps,all.map(p=>p.id));
+ const all=[...racers,...s.ai.values()];for(const p of all)seatRacer(s,p);s.race=makeLapState(s.track,s.laps,all.map(p=>p.id));
  s.phase='countdown';s.countdownTo=s.now()+3500;s.startedAt=s.now();s.finishedAt=null;s.simClock=0;
  return true;
 }
@@ -110,8 +126,8 @@ function stepVehicle(p,inp,dt,s){
   const delta=(inp.ascend?1:0)-(inp.descend?1:0);
   const target=delta*4;
   p.vy=clamp((p.vy||0)+(target-(p.vy||0))*dt*2.5,-5,5);
-  p.y=Math.max((s.spawns[p.id]?.y??0)+1.2,p.y+p.vy*dt);
- }else{p.y=s.spawns[p.id]?.y??0;}
+  p.y+=p.vy*dt;
+ }
  p.speed=speed;p.vx=Math.sin(p.yaw)*speed;p.vz=Math.cos(p.yaw)*speed;
  // Avoid impossible jumps across very thin walls by maintaining <= .21m
  // per step at standard pace; a true Ammo server is a later milestone.
@@ -151,6 +167,7 @@ export function stepLan(s,dt=1/60){
       !s.track.collision.obstacles?.some(o=>Math.hypot(o.x-candidate.x,o.z-candidate.z)<1.6));
      if(free){p.x=free.x;p.z=free.z;p.y=anchor.y??0;p.yaw=anchor.yaw||0;p.speed=0;p.vx=0;p.vz=0;
       p.npcState=npcRacerState();p.npcState.lastSafe={...anchor};p.npcState.rescueCooldown=10;
+      seatRacer(s,p);
       previous[p.id]={x:p.x,y:p.y,z:p.z};
       continue;
      }
@@ -164,6 +181,19 @@ export function stepLan(s,dt=1/60){
  // Re-project a car from wall penetration after racer-racer collision.
  for(const p of all){
   bounceWalls(p,s.track.collision.walls,s.track);
+  const road=roadAt(s,p);
+  if(p.vehicle==='KART'){
+   // The online server does not run Ammo. Sample actual Blender road triangles
+   // after resolving X/Z contacts, then place the visual chassis above it.
+   p.y=road.height+KART_RIDE_HEIGHT;p.vy=0;
+  }else p.y=Math.max(p.y,road.height+(p.vehicle==='DRONE'?1.6:1.2));
+  if(road.onRoad)p.lastRoad={x:p.x,z:p.z,y:road.height,yaw:p.yaw};
+  else if(road.distance>Math.max(6,(s.track.race.roadWidth||5)*.75+2)&&p.lastRoad){
+   // Never let a racer progress in empty space outside the authored course.
+   const safe=p.lastRoad;p.x=safe.x;p.z=safe.z;p.y=safe.y+(p.vehicle==='KART'?KART_RIDE_HEIGHT:p.vehicle==='DRONE'?3.1:2.45);
+   p.yaw=safe.yaw;p.speed=0;p.vy=0;
+   previous[p.id]={x:p.x,y:p.y,z:p.z};
+  }
   // Velocity and speed must stay in sync AFTER wall and racer contact.
   // Otherwise the shared NPC controller thinks a physically stopped car is
   // still moving and never enters its reverse/unstick state.

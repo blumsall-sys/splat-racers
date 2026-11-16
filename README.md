@@ -67,3 +67,8 @@ A few older physics and driver modules remain in `src/` because the legacy regre
 **Current networking boundary:** Online rooms use browser-hosted PeerJS/WebRTC data channels and the public PeerJS signaling service, not a dedicated hosted race server. A direct WebRTC connection can fail on restrictive NATs or corporate/firewalled networks because a TURN relay is not provisioned. The LAN and online modes run a simplified host-authoritative kinematic simulation, not the local game's full PlayCanvas/Ammo raycast physics. Neither automated unit tests nor GitHub Pages deployment guarantees real-world WebRTC interoperability, frame rate or 3D rendering; those still need manual multi-device tests.
 
 GitHub Actions checks source tests, asset validation, and the built Pages HTML/asset paths. A test failure prevents deployment.
+
+
+### Network road surface fix (2026-11-16)
+
+The online host previously set every kart's Y to its initial grid height each frame, irrespective of the authored Blender road's slopes. Network host physics now derives the chassis height from road triangles in `collision.glb` and falls back to exported `track.race.navigation.points[].y` if the collision asset cannot be read. The self-hosted LAN server uses the same surface reader. Kart visuals no longer add a second independent 0.95 m offset. This change is scoped to `src/network/`, `scripts/lan-server.mjs`, and network-specific tests; local Ammo/split-screen physics remain unchanged. This is still simplified network vehicle physics, not full Bullet raycast chassis physics. Try 1 lap with two karts over the high bridge and inspect both clients' road contact before tuning driving feel.

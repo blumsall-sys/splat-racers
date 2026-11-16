@@ -1,4 +1,5 @@
 import Peer from 'peerjs';
+import {createNetworkRoadSurface} from './road-surface.js';
 import {makeLanState,joinLan,leaveLan,setLanVehicle,setLanReady,sendLanInput,startLanRace,resetLanLobby,stepLan,lanSnapshot} from './host-core.js';
 
 function waitFor(emitter,event){
@@ -9,13 +10,13 @@ function waitFor(emitter,event){
   emitter.once(event,ok);emitter.once('error',fail);
  });
 }
-export async function openRoom(code,track,onSnapshot,onClose,{peerFactory=(id)=>new Peer(id,{secure:true}),requestTimeoutMs=10000}={}){
+export async function openRoom(code,track,onSnapshot,onClose,{peerFactory=(id)=>new Peer(id,{secure:true}),requestTimeoutMs=10000,surface=null}={}){
  const hosting=!code;
  code=code||crypto.randomUUID().replaceAll('-','').slice(0,10).toUpperCase();
  if(!/^[A-F0-9]{10}$/.test(code))throw Error('Enter the 10-character room code.');
  const id='splat-racers-room-'+code;
  const peer=peerFactory(hosting?id:undefined);
- const room=hosting?makeLanState(track):null;
+ const room=hosting?makeLanState(track,{surface:surface||createNetworkRoadSurface(track)}):null;
  const local={},guests=new Map(),pending=new Map();
  let channel,timer,serial=0,closed=false;
  function close(message){

@@ -9,11 +9,19 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {createServer as createVite} from 'vite';
 import {validateTrack} from '../src/track/track.js';
+import {createNetworkRoadSurface} from '../src/network/road-surface.js';
 import {makeLanState,joinLan,leaveLan,setLanVehicle,setLanReady,sendLanInput,startLanRace,resetLanLobby,stepLan,lanSnapshot} from '../src/network/host-core.js';
 const root=path.resolve(fileURLToPath(new URL('../',import.meta.url)));
 const port=Number(process.env.SPLAT_LAN_PORT||3000);
 const track=validateTrack(JSON.parse(await fs.readFile(path.join(root,'assets/track.json'),'utf8')));
-const room=makeLanState(track),streams=new Map();
+const pack=JSON.parse(await fs.readFile(path.join(root,'assets/asset-pack.json'),'utf8'));
+let surface;
+try{
+ const collision=await fs.readFile(path.join(root,'assets',pack.staticCollisionGlb));
+ surface=createNetworkRoadSurface(track,collision);
+ console.log('LAN road collision:',surface.triangles,'Blender triangles');
+}catch(err){console.warn('LAN collision mesh fallback to navigation height:',err.message);surface=createNetworkRoadSurface(track);}
+const room=makeLanState(track,{surface}),streams=new Map();
 const vite=await createVite({root,configFile:path.join(root,'vite.config.mjs'),server:{middlewareMode:true,hmr:false},appType:'mpa',clearScreen:false});
 function send(res,status,body){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));}
 async function payload(req){let data='';for await(const c of req){data+=c;if(data.length>8192)throw new Error('Request is too large');}
