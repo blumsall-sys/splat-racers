@@ -77,6 +77,7 @@ function makeRacer(data){
 }
 function lerpAngle(a,b,t){return a+Math.atan2(Math.sin(b-a),Math.cos(b-a))*t;}
 function onSnapshot(data){
+ if(!data||!Array.isArray(data.racers))return;
  lastData=data;if(track)drawMap($('lan-hud'),track,data.racers);
  snapshots.clear();
  $('lan-connection').textContent=`CONNECTED · ${data.racers.length}/4 RACERS · ${data.phase.toUpperCase()}`;
@@ -94,12 +95,18 @@ function onSnapshot(data){
  if(data.phase==='countdown')$('lan-countdown').textContent=String(Math.max(1,Math.ceil(data.countdownMs/1000)));
  $('lan-results').hidden=data.phase!=='results';
  if(data.phase==='results'){
-  $('lan-back').hidden=online&&playerId!=='p1';
+  $('lan-back').hidden=playerId!=='p1';
   const champion=data.racers.find(p=>p.id===data.winner);
   $('lan-winner').textContent=(champion?.label||data.winner||'UNKNOWN').toUpperCase()+' WINS!';
   $('lan-standings').replaceChildren(...data.standings.map(p=>{const e=document.createElement('div');e.textContent=`${p.place}. ${p.label} — ${p.laps} laps`;return e;}));
  }
- if(data.phase==='lobby')$('lan-after-join').hidden=!token;
+ if(data.phase==='lobby'){
+  $('lan-after-join').hidden=!token;
+  const humanCount=data.racers.filter(p=>!p.isNpc&&!p.disconnected).length;
+  const availableNpcSlots=Math.max(0,4-humanCount);
+  for(const option of $('lan-npcs').options)option.disabled=Number(option.value)>availableNpcSlots;
+  if(Number($('lan-npcs').value)>availableNpcSlots)$('lan-npcs').value=String(availableNpcSlots);
+ }
  const self=data.racers.find(p=>p.id===playerId);
  if(self){
   if(data.phase==='lobby'){ready=self.ready;$('lan-ready').textContent=ready?'CANCEL READY':'READY';}
@@ -133,7 +140,7 @@ async function enter(create){try{
  stream.onerror=()=>{$('lan-connection').textContent='RECONNECTING…';};
  }catch(err){if(online){transport?.close('');$('lan-join').disabled=$('create-room').disabled=false;}report(err);}}
 $('lan-vehicle').onchange=async()=>{try{await call('vehicle',{token,vehicle:$('lan-vehicle').value});ready=false;$('lan-ready').textContent='READY';}catch(err){report(err);}};
-$('lan-ready').onclick=async()=>{try{ready=!ready;await call('ready',{token,ready});$('lan-ready').textContent=ready?'CANCEL READY':'READY';}catch(err){report(err);}};
+$('lan-ready').onclick=async()=>{try{const desired=!ready;await call('ready',{token,ready:desired});ready=desired;$('lan-ready').textContent=ready?'CANCEL READY':'READY';}catch(err){report(err);}};
 $('lan-start').onclick=async()=>{try{await call('start',{token,npcCount:+$('lan-npcs').value,laps:+$('lan-laps').value,pace:+$('lan-pace').value,difficulty:$('lan-skill').value});}catch(err){report(err);}};
 $('lan-back').onclick=async()=>{try{await call('reset',{token});}catch(err){report(err);}};
 // Input samples are untrusted requests, never positions or lap counters.

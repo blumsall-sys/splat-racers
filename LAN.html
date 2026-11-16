@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Splat Racers · LAN Test</title><link rel="stylesheet" href="/src/lan.css"></head>
 <body>
 <canvas id="lan-viewport" aria-label="PlayCanvas LAN race viewport"></canvas>
-<header class="topbar"><strong>✦ SPLAT RACERS</strong><span>LAN TEST · v2.0.0</span><span id="lan-connection">NOT CONNECTED</span></header>
+<header class="topbar"><strong>✦ SPLAT RACERS</strong><span>LAN / ONLINE · v2.3.1</span><span id="lan-connection">NOT CONNECTED</span></header>
 <div id="lan-lobby" class="lan-panel">
  <h1>NETWORK RACING</h1><p>Join one local server. The first player is the host. Up to four human racers; empty slots can be NPCs.</p>
  <label>Racer name <input id="lan-name" maxlength="24" value="Racer" autocomplete="off"></label>
@@ -20,7 +20,7 @@
    <button class="primary" id="lan-start">START NETWORK RACE</button>
   </div>
  </div>
- <a href="./" style="color:#c8ed96">Local play</a><div id="lan-roster" aria-label="Players in room"></div>
+ <a href="./" style="color:#c8ed96">Local split-screen</a> · <a href="./LAN.html?online" style="color:#c8ed96">Online rooms</a><div id="lan-roster" aria-label="Players in room"></div>
  <p id="lan-message" role="status">Join from any PC on the same LAN.</p>
  <p class="small">Controls: WASD / Xbox RT LT + left stick · Shift / A ascend · Q / LB descend · Space / B nitro. LAN uses an experimental host physics model, not yet full Ammo parity.</p>
 </div>

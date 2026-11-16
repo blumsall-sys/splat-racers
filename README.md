@@ -48,3 +48,22 @@ This provides each NPC's vehicle type, required checkpoint, navigation phase, pl
 Use the in-game **Settings & Controls** screen for P1/P2 keyboard and gamepad mappings. The game retains human hop/ascend/descend/boost commands; NPC altitude control does **not** change these bindings. The Blender exporter still creates GLB visuals/colliders, SOG reference, lights, and the shared 3D ring route. The network mode remains experimental and intentionally separate from local PlayCanvas physics.
 
 A few older physics and driver modules remain in `src/` because the legacy regression tests and drive-lab use them. They are **not** the live PlayCanvas gameplay entry point; `index.html` runs `src/v14/main.js`. Historical documentation and prior-version installer duplicates are excluded from this release.
+
+
+## Multiplayer test routes (November 16, 2026)
+
+- **Local, one or two players on the same device:** https://blumsall-sys.github.io/splat-racers/
+- **Online room, up to four people on different devices:** https://blumsall-sys.github.io/splat-racers/LAN.html?online
+- **Self-hosted LAN, up to four people on the same network:** Run `npm install`, then `npm run lan` on the host PC. Open `http://localhost:3000/LAN.html` there and `http://HOST_LAN_IP:3000/LAN.html` on each other machine. Permit TCP port 3000 through the host firewall. This is *not* the GitHub Pages LAN URL: the Node server supplies the local API.
+
+### Quick online test
+
+1. On the first device, open the **online** link and choose **Create room**; wait for your player ID and copy the ten-character invitation link. Keep the host's tab in the foreground.
+2. On a second device (ideally a different network, e.g. mobile cellular), open the shared link, enter a name and **JOIN ROOM**. Add a third/fourth device if available. Each participant selects Kart, Hovercraft or Drone and presses **READY**.
+3. The host selects 1 lap, 1× pace, and a number of NPCs that keeps the *total* racer count at four or fewer; host also presses **READY**, then **START NETWORK RACE**.
+4. Confirm that all devices show the same countdown, everyone can steer and accelerate, position updates and checkpoints are synchronized, and the winning order/results appear. Only the host can return everyone to the lobby.
+5. Repeat with one device on another ISP/cellular connection and with the host closing the tab. A closed host should disconnect guests and show a message; reopen and create a fresh code to play again.
+
+**Current networking boundary:** Online rooms use browser-hosted PeerJS/WebRTC data channels and the public PeerJS signaling service, not a dedicated hosted race server. A direct WebRTC connection can fail on restrictive NATs or corporate/firewalled networks because a TURN relay is not provisioned. The LAN and online modes run a simplified host-authoritative kinematic simulation, not the local game's full PlayCanvas/Ammo raycast physics. Neither automated unit tests nor GitHub Pages deployment guarantees real-world WebRTC interoperability, frame rate or 3D rendering; those still need manual multi-device tests.
+
+GitHub Actions checks source tests, asset validation, and the built Pages HTML/asset paths. A test failure prevents deployment.

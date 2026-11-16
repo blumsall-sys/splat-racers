@@ -9,12 +9,12 @@ function waitFor(emitter,event){
   emitter.once(event,ok);emitter.once('error',fail);
  });
 }
-export async function openRoom(code,track,onSnapshot,onClose){
+export async function openRoom(code,track,onSnapshot,onClose,{peerFactory=(id)=>new Peer(id,{secure:true}),requestTimeoutMs=10000}={}){
  const hosting=!code;
  code=code||crypto.randomUUID().replaceAll('-','').slice(0,10).toUpperCase();
  if(!/^[A-F0-9]{10}$/.test(code))throw Error('Enter the 10-character room code.');
  const id='splat-racers-room-'+code;
- const peer=new Peer(hosting?id:undefined,{secure:true});
+ const peer=peerFactory(hosting?id:undefined);
  const room=hosting?makeLanState(track):null;
  const local={},guests=new Map(),pending=new Map();
  let channel,timer,serial=0,closed=false;
@@ -46,7 +46,8 @@ export async function openRoom(code,track,onSnapshot,onClose){
      try{const result=execute(member,msg.action,msg.data||{});if(msg.seq)conn.send({seq:msg.seq,result});}
      catch(err){if(msg?.seq)conn.send({seq:msg.seq,error:err.message});}
     });
-    conn.on('close',()=>{guests.delete(conn);if(member.token)leaveLan(room,member.token);});
+    const remove=()=>{if(!guests.has(conn))return;guests.delete(conn);if(member.token)leaveLan(room,member.token);};
+    conn.on('close',remove);conn.on('error',remove);
    });
    let frame=0;
    timer=setInterval(()=>{stepLan(room);if(++frame%4===0){const snapshot=lanSnapshot(room);onSnapshot(snapshot);
@@ -55,7 +56,10 @@ export async function openRoom(code,track,onSnapshot,onClose){
    channel=peer.connect(id,{reliable:true});const opened=waitFor(channel,'open');
    await Promise.race([opened,new Promise((_,reject)=>peer.once('error',reject))]);
    channel.on('close',()=>close('Host disconnected. Open Online to join a new room.'));
+   channel.on('error',err=>close('Connection error: '+(err?.message||err)));
+   peer.on('error',err=>close('Signaling error: '+(err?.message||err)));
    channel.on('data',msg=>{
+    if(!msg||typeof msg!=='object')return;
     if(msg.snapshot){onSnapshot(msg.snapshot);return;}
     const job=pending.get(msg.seq);
     if(job){pending.delete(msg.seq);if(msg.error)job.reject(Error(msg.error));else job.resolve(msg.result);}
@@ -63,12 +67,17 @@ export async function openRoom(code,track,onSnapshot,onClose){
    });
   }
  }catch(err){close('');throw err;}
- window.addEventListener('pagehide',()=>close(''),{once:true});
+ if(typeof window!=='undefined')window.addEventListener('pagehide',()=>close(''),{once:true});
  return {code,close,async call(action,data){
   if(closed)throw Error('Room closed');
   if(hosting)return execute(local,action,data);
   if(action==='input'){channel.send({action,data});return {};}
   const seq=++serial;
-  return new Promise((resolve,reject)=>{pending.set(seq,{resolve,reject});channel.send({action,data,seq});});
+  return new Promise((resolve,reject)=>{
+   const timeout=setTimeout(()=>{pending.delete(seq);reject(Error('Host did not respond. Check the connection and try again.'));},requestTimeoutMs);
+   const finish={resolve:value=>{clearTimeout(timeout);resolve(value);},reject:error=>{clearTimeout(timeout);reject(error);}};
+   pending.set(seq,finish);
+   try{channel.send({action,data,seq});}catch(error){pending.delete(seq);finish.reject(error);}
+  });
  }};
 }
